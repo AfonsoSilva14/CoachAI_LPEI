@@ -1,0 +1,3 @@
+video,modelo,frames,fps_medio,ficheiro_saida
+deslizamento_escapular_p1_lat,MediaPipe BlazePose,652,70.39,resultados\deslizamento_escapular_p1_lat_mediapipe.mp4
+deslizamento_escapular_p1_lat,YOLO Pose,652,34.66,resultados\deslizamento_escapular_p1_lat_yolo.mp4

@@ -1,0 +1,2 @@
+butterword 10 15 hertz
+fazer comparação de filtrado e não filtrado (com ruído)

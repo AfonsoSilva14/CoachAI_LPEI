@@ -1,0 +1,3 @@
+video,modelo,frames,fps_medio,ficheiro_saida
+polichinelo_adaptado_p1,MediaPipe BlazePose,362,68.82,resultados\polichinelo_adaptado_p1_mediapipe.mp4
+polichinelo_adaptado_p1,YOLO Pose,362,35.12,resultados\polichinelo_adaptado_p1_yolo.mp4
