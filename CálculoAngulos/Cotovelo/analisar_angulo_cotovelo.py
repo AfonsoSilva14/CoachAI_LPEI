@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import os
 import urllib.request
 
+# Caminhos principais: video analisado, outputs gerados e modelo MediaPipe usado.
 VIDEO_PATH = "deslizamento_escapular_p1.mp4"
 os.makedirs("resultados", exist_ok=True)
 OUTPUT_CSV = "resultados/angulos_cotovelo.csv"
@@ -16,6 +17,7 @@ MODEL_PATH = "pose_landmarker_heavy.task"
 
 
 def download_modelo():
+    # Descarrega o modelo de pose apenas se ainda nao existir localmente.
     url = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/latest/pose_landmarker_heavy.task"
     if not os.path.exists(MODEL_PATH):
         print("A descarregar modelo...")
@@ -24,29 +26,37 @@ def download_modelo():
 
 
 def calcular_angulo(a, b, c):
+    # Calcula o angulo formado por tres pontos, usando b como ponto central.
     a = np.array(a)
     b = np.array(b)
     c = np.array(c)
+    # Vetores que saem do ponto central para os outros dois pontos.
     ba = a - b
     bc = c - b
+    # Formula do produto escalar para obter o cosseno do angulo.
     coseno = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
+    # Limita o valor para evitar erros numericos no arccos.
     coseno = np.clip(coseno, -1.0, 1.0)
     return np.degrees(np.arccos(coseno))
 
 
 def main():
+    # Garante que o modelo esta disponivel antes de iniciar a analise.
     download_modelo()
 
+    # Abre o video que vai ser analisado.
     cap = cv2.VideoCapture(VIDEO_PATH)
     if not cap.isOpened():
         print("Erro: não foi possível abrir o vídeo.")
         return
 
+    # Guarda informacao basica do video e inicializa a lista de resultados.
     fps = cap.get(cv2.CAP_PROP_FPS)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     dados = []
     frame_id = 0
 
+    # Configura o MediaPipe Pose Landmarker para funcionar em modo video.
     base_options = mp_tasks.BaseOptions(model_asset_path=MODEL_PATH)
     options = vision.PoseLandmarkerOptions(
         base_options=base_options,
@@ -56,17 +66,21 @@ def main():
         min_tracking_confidence=0.5
     )
 
+    # Cria o detetor e processa o video frame a frame.
     with vision.PoseLandmarker.create_from_options(options) as landmarker:
         while True:
+            # Le o proximo frame; quando falha, o video terminou.
             ret, frame = cap.read()
             if not ret:
                 break
 
+            # Converte o frame para RGB e para o formato de imagem do MediaPipe.
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
 
             # timestamp em milissegundos
             timestamp_ms = int((frame_id / fps) * 1000)
+            # Deteta os pontos corporais correspondentes ao instante atual do video.
             results = landmarker.detect_for_video(mp_image, timestamp_ms)
 
             if results.pose_landmarks:
@@ -77,6 +91,7 @@ def main():
                 cotovelo_esq = lm[13]
                 pulso_esq    = lm[15]
 
+                # Angulo do cotovelo esquerdo: ombro-cotovelo-pulso.
                 angulo_esq = calcular_angulo(
                     [ombro_esq.x,    ombro_esq.y],
                     [cotovelo_esq.x, cotovelo_esq.y],
@@ -87,12 +102,14 @@ def main():
                 cotovelo_dir = lm[14]
                 pulso_dir    = lm[16]
 
+                # Angulo do cotovelo direito: ombro-cotovelo-pulso.
                 angulo_dir = calcular_angulo(
                     [ombro_dir.x,    ombro_dir.y],
                     [cotovelo_dir.x, cotovelo_dir.y],
                     [pulso_dir.x,    pulso_dir.y]
                 )
 
+                # Guarda o resultado deste frame para depois exportar para CSV/grafico.
                 dados.append({
                     "frame": frame_id,
                     "tempo_segundos": frame_id / fps,
@@ -100,13 +117,16 @@ def main():
                     "angulo_cotovelo_direito":  angulo_dir
                 })
 
+            # Avanca o contador mesmo quando nao ha pose detetada no frame.
             frame_id += 1
 
     cap.release()
 
+    # Converte os resultados para tabela e grava em CSV.
     df = pd.DataFrame(dados)
     df.to_csv(OUTPUT_CSV, index=False)
 
+    # Cria um grafico com a evolucao dos angulos ao longo do tempo.
     plt.figure(figsize=(12, 6))
     plt.plot(df["tempo_segundos"], df["angulo_cotovelo_esquerdo"], label="Cotovelo esquerdo")
     plt.plot(df["tempo_segundos"], df["angulo_cotovelo_direito"],  label="Cotovelo direito")
@@ -118,6 +138,7 @@ def main():
     plt.savefig(OUTPUT_GRAFICO)
     plt.show()
 
+    # Mostra os ficheiros gerados e algumas estatisticas simples dos angulos.
     print("CSV guardado em:", OUTPUT_CSV)
     print("Gráfico guardado em:", OUTPUT_GRAFICO)
     print("\nResumo:")

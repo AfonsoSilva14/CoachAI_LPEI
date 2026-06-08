@@ -1,18 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
+
+<!-- Layout principal da atividade de captura em tempo real -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- Visualização da câmara através do CameraX -->
     <androidx.camera.view.PreviewView
         android:id="@+id/previewView"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- Camada sobreposta utilizada para desenhar os landmarks e ligações da pose -->
     <com.example.coachai.PoseOverlayView
         android:id="@+id/poseOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- Caixa de texto para apresentar mensagens de estado e feedback ao utilizador -->
     <TextView
         android:id="@+id/txtStatus"
         android:layout_width="wrap_content"

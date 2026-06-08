@@ -6,9 +6,11 @@ import csv
 import mediapipe as mp
 from ultralytics import YOLO
 
+# Pastas usadas para ler os videos de entrada e guardar os resultados.
 VIDEOS_DIR = "videos"
 RESULTADOS_DIR = "resultados"
 
+# Garante que a pasta de resultados existe antes de escrever videos ou CSV.
 os.makedirs(RESULTADOS_DIR, exist_ok=True)
 
 # Se yolo26n-pose.pt não funcionar troca para:
@@ -17,10 +19,13 @@ YOLO_MODEL = "yolo26n-pose.pt"
 
 
 def processar_mediapipe(video_path):
+    # Processa um video com MediaPipe Pose e grava o video anotado.
 
+    # Inicializa os modulos usados para detetar a pose e desenhar o esqueleto.
     mp_pose = mp.solutions.pose
     mp_drawing = mp.solutions.drawing_utils
 
+    # Usa o nome do ficheiro original para gerar o nome do resultado.
     nome = os.path.splitext(os.path.basename(video_path))[0]
 
     output_path = os.path.join(
@@ -28,12 +33,14 @@ def processar_mediapipe(video_path):
         f"{nome}_mediapipe.mp4"
     )
 
+    # Abre o video e recolhe as propriedades necessarias para o ficheiro de saida.
     cap = cv2.VideoCapture(video_path)
 
     largura = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     altura = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps_original = cap.get(cv2.CAP_PROP_FPS)
 
+    # Cria um video de saida com a mesma resolucao e FPS do original.
     writer = cv2.VideoWriter(
         output_path,
         cv2.VideoWriter_fourcc(*"mp4v"),
@@ -44,6 +51,7 @@ def processar_mediapipe(video_path):
     total_frames = 0
     tempos = []
 
+    # Configura o detetor de pose do MediaPipe para processar video frame a frame.
     with mp_pose.Pose(
         static_image_mode=False,
         model_complexity=1,
@@ -54,13 +62,16 @@ def processar_mediapipe(video_path):
 
         while True:
 
+            # Le um frame; quando nao ha mais frames, termina o ciclo.
             ret, frame = cap.read()
 
             if not ret:
                 break
 
+            # Mede o tempo gasto pelo modelo neste frame.
             inicio = time.time()
 
+            # Converte BGR (OpenCV) para RGB (formato esperado pelo MediaPipe).
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
             resultado = pose.process(rgb)
@@ -71,6 +82,7 @@ def processar_mediapipe(video_path):
 
             if resultado.pose_landmarks:
 
+                # Desenha os pontos e ligacoes da pose detetada no frame.
                 mp_drawing.draw_landmarks(
                     frame,
                     resultado.pose_landmarks,
@@ -79,6 +91,7 @@ def processar_mediapipe(video_path):
 
             fps_atual = 1 / (tempos[-1] + 1e-9)
 
+            # Escreve o FPS instantaneo no video anotado.
             cv2.putText(
                 frame,
                 f"MediaPipe | FPS: {fps_atual:.1f}",
@@ -93,9 +106,11 @@ def processar_mediapipe(video_path):
 
             total_frames += 1
 
+    # Fecha os recursos de leitura e escrita de video.
     cap.release()
     writer.release()
 
+    # Calcula o FPS medio usando o tempo total de inferencia.
     fps_medio = (
         total_frames / sum(tempos)
         if sum(tempos) > 0 else 0
@@ -111,9 +126,12 @@ def processar_mediapipe(video_path):
 
 
 def processar_yolo(video_path):
+    # Processa um video com YOLO Pose e grava o video anotado.
 
+    # Carrega o modelo YOLO definido na constante YOLO_MODEL.
     model = YOLO(YOLO_MODEL)
 
+    # Extrai o nome do video para nomear o ficheiro de saida.
     nome = os.path.splitext(
         os.path.basename(video_path)
     )[0]
@@ -123,12 +141,14 @@ def processar_yolo(video_path):
         f"{nome}_yolo.mp4"
     )
 
+    # Abre o video e le as propriedades usadas pelo VideoWriter.
     cap = cv2.VideoCapture(video_path)
 
     largura = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     altura = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps_original = cap.get(cv2.CAP_PROP_FPS)
 
+    # Prepara o video de saida com as dimensoes e FPS do original.
     writer = cv2.VideoWriter(
         output_path,
         cv2.VideoWriter_fourcc(*"mp4v"),
@@ -141,15 +161,18 @@ def processar_yolo(video_path):
 
     while True:
 
+        # Le os frames sequencialmente ate ao fim do video.
         ret, frame = cap.read()
 
         if not ret:
             break
 
+        # Mede o tempo da inferencia YOLO no frame atual.
         inicio = time.time()
 
         results = model(frame, verbose=False)
 
+        # Gera um frame ja desenhado com keypoints e esqueleto.
         annotated = results[0].plot()
 
         fim = time.time()
@@ -158,6 +181,7 @@ def processar_yolo(video_path):
 
         fps_atual = 1 / (tempos[-1] + 1e-9)
 
+        # Mostra o FPS instantaneo no frame anotado.
         cv2.putText(
             annotated,
             f"YOLO Pose | FPS: {fps_atual:.1f}",
@@ -172,9 +196,11 @@ def processar_yolo(video_path):
 
         total_frames += 1
 
+    # Liberta os recursos associados ao video.
     cap.release()
     writer.release()
 
+    # Calcula o FPS medio do processamento YOLO.
     fps_medio = (
         total_frames / sum(tempos)
         if sum(tempos) > 0 else 0
@@ -193,6 +219,7 @@ def main():
 
     resultados = []
 
+    # Recolhe todos os ficheiros de video suportados na pasta de entrada.
     videos = [
         f for f in os.listdir(VIDEOS_DIR)
         if f.lower().endswith(
@@ -204,6 +231,7 @@ def main():
         print("Não encontrei vídeos na pasta videos/")
         return
 
+    # Cada video e processado pelos dois modelos para comparar desempenho.
     for video in videos:
 
         video_path = os.path.join(
@@ -227,6 +255,7 @@ def main():
             processar_yolo(video_path)
         )
 
+    # Guarda o resumo da comparacao num ficheiro CSV.
     csv_path = os.path.join(
         RESULTADOS_DIR,
         "comparacao_resultados.csv"
@@ -256,6 +285,7 @@ def main():
 
     print("\nConcluído!")
 
+    # Apresenta no terminal cada registo guardado no CSV.
     for r in resultados:
         print(r)
 

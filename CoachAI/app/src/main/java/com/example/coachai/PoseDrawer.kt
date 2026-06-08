@@ -6,8 +6,12 @@ import android.graphics.Color
 import android.graphics.Paint
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 
+/**
+ * Classe responsável por desenhar o esqueleto da pose sobre uma imagem.
+ */
 class PoseDrawer {
 
+    // Paint usado para desenhar os pontos dos landmarks
     private val pointPaint = Paint().apply {
         color = Color.RED
         style = Paint.Style.FILL
@@ -15,6 +19,7 @@ class PoseDrawer {
         isAntiAlias = true
     }
 
+    // Paint usado para desenhar as linhas entre os landmarks
     private val linePaint = Paint().apply {
         color = Color.GREEN
         style = Paint.Style.STROKE
@@ -22,17 +27,25 @@ class PoseDrawer {
         isAntiAlias = true
     }
 
+    /**
+     * Desenha os landmarks e as ligações da pose numa cópia do Bitmap original.
+     */
     fun drawSkeleton(
         original: Bitmap,
         landmarks: List<NormalizedLandmark>
     ): Bitmap {
+
+        // Cria uma cópia editável da imagem original
         val mutableBitmap = original.copy(Bitmap.Config.ARGB_8888, true)
+
+        // Canvas usado para desenhar sobre a imagem
         val canvas = Canvas(mutableBitmap)
 
+        // Dimensões da imagem usadas para converter coordenadas normalizadas em píxeis
         val width = mutableBitmap.width.toFloat()
         val height = mutableBitmap.height.toFloat()
 
-        // Ligações principais BlazePose
+        // Ligações principais entre landmarks do modelo BlazePose/MediaPipe
         val connections = listOf(
             0 to 1, 1 to 2, 2 to 3, 3 to 7,        // face esquerda
             0 to 4, 4 to 5, 5 to 6, 6 to 8,        // face direita
@@ -53,7 +66,7 @@ class PoseDrawer {
             28 to 30, 30 to 32                     // pé direito
         )
 
-        // desenhar linhas
+        // Desenha as linhas do esqueleto entre os landmarks definidos
         for ((start, end) in connections) {
             if (start < landmarks.size && end < landmarks.size) {
                 val p1 = landmarks[start]
@@ -68,13 +81,15 @@ class PoseDrawer {
             }
         }
 
-        // desenhar pontos
+        // Desenha os pontos individuais correspondentes aos landmarks
         for (landmark in landmarks) {
             val x = landmark.x() * width
             val y = landmark.y() * height
+
             canvas.drawCircle(x, y, 8f, pointPaint)
         }
 
+        // Devolve a imagem final com o esqueleto desenhado
         return mutableBitmap
     }
 }
