@@ -5,36 +5,69 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <!-- Botão carregar vídeo -->
     <Button
         android:id="@+id/btnPickVideo"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Carregar Vídeo" />
+        android:text="Carregar Vídeo MediaPipe" />
 
-    <!-- Botão real-time -->
+    <Button
+        android:id="@+id/btnPickVideoMlKit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Carregar Vídeo ML Kit" />
+
+    <Button
+        android:id="@+id/btnPickVideoMoveNet"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Carregar Vídeo MoveNet" />
+
     <Button
         android:id="@+id/btnRealTime"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:text="Real-Time" />
+        android:text="MediaPipe Real-Time" />
 
-    <!-- Preview com skeleton -->
+    <Button
+        android:id="@+id/btnMlKitRealTime"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="ML Kit Real-Time" />
+
+    <Button
+        android:id="@+id/btnMoveNetRealTime"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="MoveNet Real-Time" />
+
     <ImageView
         android:id="@+id/imgPreview"
         android:layout_width="match_parent"
-        android:layout_height="300dp"
+        android:layout_height="220dp"
         android:layout_marginTop="16dp"
         android:background="#000"
         android:scaleType="fitCenter" />
 
-    <!-- Texto resultados -->
-    <TextView
-        android:id="@+id/txtResult"
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:layout_marginTop="16dp"
-        android:text="Resultado" />
+        android:fillViewport="true">
+
+        <TextView
+            android:id="@+id/txtResult"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Resultado"
+            android:textSize="14sp" />
+
+    </ScrollView>
 
 </LinearLayout>
