@@ -126,7 +126,8 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 processedFrames.add(outputBitmap)
-                sb.append("Frame ${index + 1}: ${detection.poseCount} pose(s)\n")
+                val keypointsDetectados = detection.landmarks?.size ?: 0
+                sb.append("Frame ${index + 1}: $keypointsDetectados keypoints\n")
             }
 
             val endTime = System.currentTimeMillis()
@@ -204,7 +205,7 @@ class MainActivity : AppCompatActivity() {
                 processedFrames.add(outputBitmap)
 
                 sb.append("Frame ${index + 1}: ")
-                sb.append("${pose?.allPoseLandmarks?.size ?: 0} landmarks\n")
+                sb.append("${pose?.allPoseLandmarks?.size ?: 0} keypoints\n")
             }
 
             val endTime = System.currentTimeMillis()
