@@ -3,6 +3,7 @@ package com.example.coachai
 import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.os.Bundle
 import android.util.Size
 import android.widget.TextView
@@ -11,6 +12,7 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
+import androidx.camera.core.ImageProxy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
@@ -18,6 +20,7 @@ import androidx.core.content.ContextCompat
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
+@OptIn(ExperimentalGetImage::class)
 class MoveNetRealTimeActivity : ComponentActivity() {
 
     private lateinit var previewView: PreviewView
@@ -60,7 +63,6 @@ class MoveNetRealTimeActivity : ComponentActivity() {
         ) == PackageManager.PERMISSION_GRANTED
     }
 
-    @OptIn(ExperimentalGetImage::class)
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
@@ -85,14 +87,17 @@ class MoveNetRealTimeActivity : ComponentActivity() {
                     return@setAnalyzer
                 }
 
-                val mediaImage = imageProxy.image
+                isProcessing = true
 
-                if (mediaImage != null) {
-                    isProcessing = true
-
+                try {
                     val bitmap = imageProxy.toBitmap()
 
-                    val keypoints = processor.detect(bitmap)
+                    val rotatedBitmap = rotateBitmap(
+                        bitmap,
+                        imageProxy.imageInfo.rotationDegrees
+                    )
+
+                    val keypoints = processor.detect(rotatedBitmap)
 
                     val detectedPoints = keypoints.count { it[2] > 0.1f }
 
@@ -112,12 +117,18 @@ class MoveNetRealTimeActivity : ComponentActivity() {
                         overlay.setKeypoints(keypoints)
 
                         txtResult.text =
-                            "MoveNet Real-Time\nFPS: $fps\nKeypoints: $detectedPoints\nPose utilizável: ${if (poseUtilizavel) "Sim" else "Não"}"
+                            "MoveNet Real-Time\n" +
+                                    "FPS: $fps\n" +
+                                    "Keypoints: $detectedPoints\n" +
+                                    "Pose utilizável: ${if (poseUtilizavel) "Sim" else "Não"}"
                     }
 
+                } catch (e: Exception) {
+                    runOnUiThread {
+                        txtResult.text = "Erro MoveNet: ${e.message}"
+                    }
+                } finally {
                     isProcessing = false
-                    imageProxy.close()
-                } else {
                     imageProxy.close()
                 }
             }
@@ -133,6 +144,23 @@ class MoveNetRealTimeActivity : ComponentActivity() {
             )
 
         }, ContextCompat.getMainExecutor(this))
+    }
+
+    private fun rotateBitmap(bitmap: Bitmap, rotationDegrees: Int): Bitmap {
+        if (rotationDegrees == 0) return bitmap
+
+        val matrix = Matrix()
+        matrix.postRotate(rotationDegrees.toFloat())
+
+        return Bitmap.createBitmap(
+            bitmap,
+            0,
+            0,
+            bitmap.width,
+            bitmap.height,
+            matrix,
+            true
+        )
     }
 
     override fun onDestroy() {
